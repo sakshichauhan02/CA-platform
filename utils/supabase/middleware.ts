@@ -5,6 +5,11 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 export const updateSession = async (request: NextRequest) => {
+  if (!supabaseUrl || !supabaseKey) {
+    console.error("Missing Supabase environment variables!");
+    return NextResponse.next();
+  }
+
   // Create an unmodified response
   let response = NextResponse.next({
     request: {
