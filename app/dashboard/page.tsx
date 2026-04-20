@@ -71,10 +71,7 @@ export default function DashboardPage() {
         <div className="flex h-full flex-col">
           <div className="flex h-16 items-center border-b px-6">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-                <span className="text-lg font-bold text-primary-foreground">CA</span>
-              </div>
-              <span className="text-lg font-semibold tracking-tight">CA Platform</span>
+              <Logo className="scale-90" />
             </Link>
           </div>
           <nav className="flex-1 space-y-1 p-4">
