@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 export function Hero() {
   return (
@@ -16,22 +17,19 @@ export function Hero() {
         </div>
 
         <h1 className="text-balance font-sans text-4xl font-bold tracking-tight text-foreground md:text-6xl lg:text-7xl">
-          Ace Your CA Exams with{" "}
-          <span className="text-primary">AI-Powered Mock Tests</span>
+          Crack CA Exams with <span className="text-primary">Smart Practice</span>
         </h1>
 
         <p className="mx-auto mt-6 max-w-2xl text-pretty font-sans text-lg text-muted-foreground md:text-xl">
-          Master your CA Foundation, Intermediate, and Final exams with intelligent practice tests, 
-          personalized skill analysis, and comprehensive PDF reports tailored to your learning journey.
+          Take mock tests, track performance, and improve your score with our comprehensive suite of practice tools.
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Button size="lg" className="group font-sans text-base bg-primary text-primary-foreground hover:bg-primary/90">
-            Get Started
-            <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Button>
-          <Button size="lg" variant="outline" className="font-sans text-base border-border text-foreground hover:bg-secondary">
-            View Demo
+          <Button size="lg" asChild className="group font-sans text-base bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link href="/signup">
+              Get Started
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </Link>
           </Button>
         </div>
 

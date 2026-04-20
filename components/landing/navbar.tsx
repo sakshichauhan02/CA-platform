@@ -1,5 +1,6 @@
 "use client";
 
+import { Logo } from "@/components/logo"
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useState } from "react";
@@ -12,10 +13,7 @@ export function Navbar() {
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <span className="font-sans text-lg font-bold text-primary-foreground">CA</span>
-          </div>
-          <span className="font-sans text-xl font-semibold text-foreground">PrepPro</span>
+          <Logo showTagline={true} />
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">
@@ -31,11 +29,11 @@ export function Navbar() {
         </div>
 
         <div className="hidden items-center gap-4 md:flex">
-          <Button variant="ghost" className="font-sans text-muted-foreground hover:text-foreground">
-            Log in
+          <Button variant="ghost" asChild className="font-sans text-muted-foreground hover:text-foreground">
+            <Link href="/login">Login</Link>
           </Button>
-          <Button className="font-sans bg-primary text-primary-foreground hover:bg-primary/90">
-            Get Started
+          <Button asChild className="font-sans bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link href="/signup">Sign Up</Link>
           </Button>
         </div>
 
@@ -65,11 +63,11 @@ export function Navbar() {
               About
             </Link>
             <div className="flex flex-col gap-2 pt-4">
-              <Button variant="ghost" className="w-full font-sans">
-                Log in
+              <Button variant="ghost" asChild className="w-full font-sans">
+                <Link href="/login">Login</Link>
               </Button>
-              <Button className="w-full font-sans bg-primary text-primary-foreground">
-                Get Started
+              <Button asChild className="w-full font-sans bg-primary text-primary-foreground">
+                <Link href="/signup">Sign Up</Link>
               </Button>
             </div>
           </div>
