@@ -49,7 +49,7 @@ export default async function ResultsPage() {
   const rawTopicScores = latestResult?.topic_scores || {}
   const totalCorrect = latestResult?.total_score || 0
   const totalQuestions = latestResult?.total_questions || 15
-  const totalPercentage = Math.round((totalCorrect / totalQuestions) * 100)
+  const totalPercentage = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0
 
   // Convert topic scores to percentages for charts
   const normalizedTopicScores: Record<string, number> = {}
