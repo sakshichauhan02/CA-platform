@@ -77,8 +77,8 @@ export default async function ResultsPage() {
 
   // Check user subscription status in DB
   const reportUnlocked = profile?.report_unlocked || false;
-  // FOR TESTING: We force hasAccess to false so you can see the new payment card and flow
-  const hasAccess = false; 
+  // Use the actual unlocked status from the database
+  const hasAccess = reportUnlocked; 
 
 
   return (
