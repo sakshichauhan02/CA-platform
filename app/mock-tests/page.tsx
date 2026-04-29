@@ -54,7 +54,9 @@ export default function MockTestsPage() {
               </div>
               <h3 className="text-lg font-bold">Accounting Standards Mock {i}</h3>
               <p className="mt-2 text-sm text-muted-foreground">Comprehensive test covering AS 1-15. 50 Questions | 60 Mins.</p>
-              <Button className="mt-6 w-full" variant="outline">Start Test</Button>
+              <Button className="mt-6 w-full" variant="outline" asChild>
+                <Link href="/mock-tests/take">Start Test</Link>
+              </Button>
             </div>
           ))}
         </div>

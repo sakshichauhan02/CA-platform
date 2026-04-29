@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
+import Link from "next/link";
 
 const plans = [
   {
@@ -98,13 +99,14 @@ export function Pricing() {
               </ul>
 
               <Button
+                asChild
                 className={`mt-8 w-full font-sans ${
                   plan.highlighted
                     ? "bg-primary text-primary-foreground hover:bg-primary/90"
                     : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                 }`}
               >
-                {plan.cta}
+                <Link href="/login">{plan.cta}</Link>
               </Button>
             </div>
           ))}

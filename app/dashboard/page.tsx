@@ -25,31 +25,79 @@ import {
   Trophy,
   Target,
   Brain,
-  History
+  History,
+  ArrowRight
 } from 'lucide-react'
+import { format } from 'date-fns'
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null)
+  const [results, setResults] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    totalTests: 0,
+    avgScore: 0,
+    strongSubject: 'N/A'
+  })
   const router = useRouter()
+  const supabase = createClient()
 
   useEffect(() => {
-    const getUser = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-      } else {
+    const fetchData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          router.push('/login')
+          return
+        }
         setUser(user)
+
+        // Fetch test results
+        const { data: resultsData, error } = await supabase
+          .from('test_results')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+
+        console.log("Dashboard - Results Data:", resultsData)
+        if (error) throw error
+
+        if (resultsData && resultsData.length > 0) {
+          setResults(resultsData)
+          
+          // Calculate stats
+          const total = resultsData.length
+          const avg = Math.round(resultsData.reduce((acc, curr) => acc + (curr.total_score || 0), 0) / total * 10) / 10
+          
+          // Calculate strongest subject from all topic_scores
+          const allTopicScores: Record<string, number> = {}
+          resultsData.forEach(r => {
+            if (r.topic_scores) {
+              Object.entries(r.topic_scores).forEach(([topic, score]) => {
+                allTopicScores[topic] = (allTopicScores[topic] || 0) + (score as number)
+              })
+            }
+          })
+          
+          const strongest = Object.entries(allTopicScores).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'
+          
+          setStats({
+            totalTests: total,
+            avgScore: avg,
+            strongSubject: strongest
+          })
+        }
+      } catch (err) {
+        console.error("Dashboard - Error fetching data:", err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
-    getUser()
-  }, [router])
+    fetchData()
+  }, [router, supabase])
 
   const handleSignOut = async () => {
-    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/login')
   }
@@ -57,7 +105,10 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-sm font-medium text-muted-foreground">Loading your dashboard...</p>
+        </div>
       </div>
     )
   }
@@ -75,9 +126,9 @@ export default function DashboardPage() {
             </Link>
           </div>
           <nav className="flex-1 space-y-1 p-4">
-            <Link href="/dashboard" className="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2 text-primary transition-colors">
+            <Link href="/dashboard" className="flex items-center gap-3 rounded-lg bg-primary/10 px-3 py-2 text-primary transition-colors font-bold shadow-sm">
               <LayoutDashboard className="h-4 w-4" />
-              <span className="text-sm font-medium">Home</span>
+              <span className="text-sm">Home</span>
             </Link>
             <Link href="/mock-tests" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
               <Brain className="h-4 w-4" />
@@ -93,10 +144,10 @@ export default function DashboardPage() {
             </Link>
           </nav>
           <div className="border-t p-4">
-            <div className="rounded-xl bg-primary/5 p-4">
-              <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">Upgrade to Pro</p>
-              <p className="text-xs text-muted-foreground mb-3">Get access to all advanced mock tests and AI analysis.</p>
-              <Button size="sm" className="w-full text-xs">Upgrade Now</Button>
+            <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 p-5 text-white shadow-lg shadow-blue-500/20">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-2">Upgrade to Pro</p>
+              <p className="text-xs text-blue-50 mb-4 opacity-90 leading-relaxed font-medium">Get access to all advanced mock tests and AI analysis.</p>
+              <Button size="sm" className="w-full bg-white text-blue-600 hover:bg-blue-50 font-bold rounded-xl border-none">Upgrade Now</Button>
             </div>
           </div>
         </div>
@@ -108,100 +159,121 @@ export default function DashboardPage() {
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/80 px-6 backdrop-blur-md">
           <div className="flex items-center gap-4">
             <h2 className="text-sm font-medium text-muted-foreground hidden sm:block">Welcome back,</h2>
-            <span className="text-sm font-bold sm:text-base">{studentName}</span>
+            <span className="text-sm font-black sm:text-lg tracking-tight">{studentName}</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-destructive">
+          <Button variant="ghost" size="sm" onClick={handleSignOut} className="text-muted-foreground hover:text-destructive font-bold rounded-xl">
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 p-6 md:p-8 space-y-8">
+        <main className="flex-1 p-6 md:p-8 space-y-8 max-w-6xl mx-auto w-full">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-2">Overview</h1>
-            <p className="text-muted-foreground text-lg">Here&apos;s a summary of your CA preparation progress.</p>
+            <h1 className="text-3xl font-black tracking-tight mb-2 text-slate-900 dark:text-white">Dashboard Overview</h1>
+            <p className="text-muted-foreground text-lg font-medium">Here&apos;s your current status in CA preparation.</p>
           </div>
 
           {/* Stats Grid */}
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <Card className="border-border/50 shadow-sm transition-all hover:shadow-md">
+            <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden group hover:shadow-xl transition-all duration-300">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Tests Taken</CardTitle>
-                <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                  <FileText className="h-4 w-4 text-blue-500" />
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Tests Taken</CardTitle>
+                <div className="h-10 w-10 rounded-2xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center rotate-3 transition-transform group-hover:rotate-0">
+                  <FileText className="h-5 w-5 text-blue-600" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">12</div>
-                <p className="text-xs text-muted-foreground mt-1">+2 from last week</p>
+                <div className="text-4xl font-black text-slate-900 dark:text-white">{stats.totalTests}</div>
+                <p className="text-xs text-muted-foreground mt-2 font-medium">Completed mock attempts</p>
               </CardContent>
             </Card>
-            <Card className="border-border/50 shadow-sm transition-all hover:shadow-md">
+            
+            <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden group hover:shadow-xl transition-all duration-300">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Avg Score</CardTitle>
-                <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <Trophy className="h-4 w-4 text-green-500" />
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Average Score</CardTitle>
+                <div className="h-10 w-10 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center -rotate-3 transition-transform group-hover:rotate-0">
+                  <Trophy className="h-5 w-5 text-emerald-600" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">78%</div>
-                <p className="text-xs text-muted-foreground mt-1">+5% improvement</p>
+                <div className="text-4xl font-black text-slate-900 dark:text-white">{stats.avgScore}</div>
+                <p className="text-xs text-muted-foreground mt-2 font-medium">Cumulative performance</p>
               </CardContent>
             </Card>
-            <Card className="border-border/50 shadow-sm transition-all hover:shadow-md">
+
+            <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden group hover:shadow-xl transition-all duration-300">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Strong Subject</CardTitle>
-                <div className="h-8 w-8 rounded-full bg-purple-500/10 flex items-center justify-center">
-                  <Target className="h-4 w-4 text-purple-500" />
+                <CardTitle className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Strong Subject</CardTitle>
+                <div className="h-10 w-10 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center rotate-3 transition-transform group-hover:rotate-0">
+                  <Target className="h-5 w-5 text-amber-600" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Accounts</div>
-                <p className="text-xs text-muted-foreground mt-1">Based on last 5 tests</p>
+                <div className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600 truncate">{stats.strongSubject}</div>
+                <p className="text-xs text-muted-foreground mt-2 font-medium">Best performing topic</p>
               </CardContent>
             </Card>
           </div>
-          
 
           {/* Recent Activity */}
-          <Card className="border-border/50 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between">
+          <Card className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between p-8 border-b border-slate-50 dark:border-slate-800">
               <div>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <History className="h-5 w-5 text-muted-foreground" />
-                  Recent Activity
+                <CardTitle className="text-xl font-black flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800">
+                    <History className="h-5 w-5 text-slate-400" />
+                  </div>
+                  Recent Test Activity
                 </CardTitle>
-                <CardDescription>Your latest mock test attempts</CardDescription>
+                <CardDescription className="text-slate-500 font-medium">Detailed breakdown of your latest attempts</CardDescription>
               </div>
-              <Button variant="outline" size="sm">View All</Button>
+              <Button variant="outline" size="sm" asChild className="rounded-xl font-bold">
+                <Link href="/results">View All Results</Link>
+              </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Test Name</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Score</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                  <TableRow className="bg-slate-50/50 dark:bg-slate-800/50 border-none">
+                    <TableHead className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Subject / Test</TableHead>
+                    <TableHead className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Date</TableHead>
+                    <TableHead className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Score</TableHead>
+                    <TableHead className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {[
-                    { name: 'Accounts Mock - Level 1', date: 'Apr 20, 2026', score: '85/100', color: 'text-green-600' },
-                    { name: 'Law Part A Quiz', date: 'Apr 18, 2026', score: '72/100', color: 'text-blue-600' },
-                    { name: 'Taxation Final Draft', date: 'Apr 15, 2026', score: '64/100', color: 'text-orange-600' },
-                    { name: 'Audit Standards Test', date: 'Apr 12, 2026', score: '77/100', color: 'text-green-600' },
-                  ].map((activity, i) => (
-                    <TableRow key={i}>
-                      <TableCell className="font-medium">{activity.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{activity.date}</TableCell>
-                      <TableCell className={activity.color}>{activity.score}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">Details</Button>
+                  {results.length > 0 ? (
+                    results.slice(0, 5).map((activity, i) => (
+                      <TableRow key={i} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors border-slate-50 dark:border-slate-800">
+                        <TableCell className="px-8 py-5 font-bold text-slate-700 dark:text-slate-300">
+                          {activity.test_name || 'CA Mock Test'}
+                        </TableCell>
+                        <TableCell className="px-8 py-5 text-sm font-medium text-slate-400">
+                          {format(new Date(activity.created_at), 'MMM dd, yyyy')}
+                        </TableCell>
+                        <TableCell className="px-8 py-5 text-center">
+                          <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-black text-sm border border-emerald-100 dark:border-emerald-800">
+                            {activity.total_score}
+                          </span>
+                        </TableCell>
+                        <TableCell className="px-8 py-5 text-right">
+                          <Button variant="ghost" size="sm" asChild className="rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-all font-bold">
+                            <Link href="/results" className="flex items-center gap-1">
+                              Details
+                              <ArrowRight className="h-3 w-3" />
+                            </Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-32 text-center text-muted-foreground font-medium italic">
+                        No recent activity found. Start a mock test to see your results!
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
